@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace Torpedo
+﻿namespace Torpedo
 {
     internal class Program
     {
