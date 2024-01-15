@@ -9,6 +9,7 @@ Lokális hálozaton belül nagyon egyszerű. Először meg kell tudnod a szerver
 2. Írd be, hogy `ipconfig`
 3. Keresd meg azt a sort ami valahogy így néz ki: `IPv4 Address. . . . . . . . . . . : 192.168.1.65`
 4. A sor végén látható IP-cím a lokális IP.
-Miután ezzel megvagy, csak indítsd el a klienst két számítógépen és írd be ezt az IP-t, és mehet is a játék.
+
+Miután ezzel megvagy, csak indítsd el a klienst két számítógépen, írd be ezt az IP-t, és mehet is a játék.
 ### Helyi hálózaton kívül, távolról
 A játék távolról is játszahtó, viszont ilyenkor egy picivel több dolgot kell tenni mintha lokálisan játszanál. Az első lépés ugyanaz. Meg kell szerezned a szervert futtató számítógép lokális IP-címét, ezután a **router**-ed beállításaiban **port forwarding**-ot kell végrehajtanod. Az **_5100_**-as portot kell továbbítanod az előbb megszerzett lokális IP-re. Ha szükséges és meg kell adnod a protokollt, akkor TCP-t adj meg. Ezután, hogy távolról tudj csatlakozni a másik félnek a publikus IP-címedet kell használnia. Ezt megtudhatod pl. a googleből, ha rákeresel, hogy _what is my ip_.
