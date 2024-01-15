@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using Torpedo;
+﻿using Torpedo;
 
 namespace TorpedoKliens
 {
