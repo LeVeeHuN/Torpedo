@@ -1,4 +1,5 @@
-﻿using Torpedo;
+﻿using LevMenu;
+using Torpedo;
 
 namespace TorpedoKliens
 {
@@ -60,60 +61,49 @@ namespace TorpedoKliens
             return selectedLocation;
         }
 
-        static void Main(string[] args)
+        static void MainGameLoop(Game game, Communicator communicator, string name, string roomCode)
         {
-            Console.Clear();
-            Console.WriteLine("Helyi hálózaton belül a szerver hálózaton belüli ip címét kell megadni.");
-            Console.WriteLine("Távoli eléréshez, használd a publikus ip-d és forwardold a 5100-as portot a szervert futtató gépre a routeredből.");
-            Console.Write("Add meg a szerver ip-címét: ");
-            string serverIp = Console.ReadLine();
-            Console.Clear();
-            Console.Write("Add meg a neved: ");
-            string name = Console.ReadLine();
-            Console.Clear();
-            Game game = new Game(name);
-
-            Communicator communicator = new Communicator(serverIp);
-
             string newPlayerStr = "new_player;";
-            for (int i = 1; i <= 5; i++)
-            {
-                Console.Clear();
+            //for (int i = 1; i <= 5; i++)
+            //{
+            //    Console.Clear();
 
-                newPlayerStr = newPlayerStr + i.ToString() + "{";
+            //    newPlayerStr = newPlayerStr + i.ToString() + "{";
 
-                string xS = string.Empty;
-                string yS = string.Empty;
+            //    string xS = string.Empty;
+            //    string yS = string.Empty;
 
-                for (int j = 1; j <= i; j++)
-                {
-                    Console.Write($"Add meg az {i}. hajo {j}. koordinatajat: ");
-                    LocationVector hajoReszLocation = GetLocation(game, false);
+            //    for (int j = 1; j <= i; j++)
+            //    {
+            //        Console.Write($"Add meg az {i}. hajo {j}. koordinatajat: ");
+            //        LocationVector hajoReszLocation = GetLocation(game, false);
 
-                    if (j == i)
-                    {
-                        xS = xS + hajoReszLocation.X;
-                        yS = yS + hajoReszLocation.Y;
-                    }
-                    else
-                    {
-                        xS = xS + hajoReszLocation.X + ".";
-                        yS = yS + hajoReszLocation.Y + ".";
-                    }
-                }
-                newPlayerStr = newPlayerStr + xS + "|" + yS;
-                if (i != 5)
-                {
-                    newPlayerStr = newPlayerStr + ",";
-                }
-            }
-            newPlayerStr = newPlayerStr + ";" + name;
+            //        if (j == i)
+            //        {
+            //            xS = xS + hajoReszLocation.X;
+            //            yS = yS + hajoReszLocation.Y;
+            //        }
+            //        else
+            //        {
+            //            xS = xS + hajoReszLocation.X + ".";
+            //            yS = yS + hajoReszLocation.Y + ".";
+            //        }
+            //    }
+            //    newPlayerStr = newPlayerStr + xS + "|" + yS;
+            //    if (i != 5)
+            //    {
+            //        newPlayerStr = newPlayerStr + ",";
+            //    }
+            //}
+            //newPlayerStr = newPlayerStr + ";" + name + ";" + roomCode;
+            string newShipLocations = ShipBuilder.BuildShip();
+            newPlayerStr = newPlayerStr + newShipLocations + name + ";" + roomCode;
             communicator.Communicate(newPlayerStr);
 
             //game.DrawMap();
             //Console.ReadLine();
 
-            string infostring = $"info;{name}";
+            string infostring = $"info;{name};{roomCode}";
             Console.ForegroundColor = ConsoleColor.Gray;
             game.DrawMap();
 
@@ -121,7 +111,7 @@ namespace TorpedoKliens
             while (true)
             {
                 // info kerese
-                System.Threading.Thread.Sleep(1500);
+                System.Threading.Thread.Sleep(2000);
                 string response = communicator.Communicate(infostring);
                 response = response.Replace("<EOF>", string.Empty);
                 string[] content = response.Split(";");
@@ -137,16 +127,16 @@ namespace TorpedoKliens
                     if (name.Equals(content[1]))
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("Nyertél!");
+                        Console.WriteLine("Nyertél!\nNyomj enter-t a folytatáshoz...");
                         Console.ReadLine();
-                        break;
+                        return;
                     }
                     else
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"Vesztettél! {content[1]} nyert.");
+                        Console.WriteLine($"Vesztettél! {content[1]} nyert.\nNyomj enter-t a folytatáshoz");
                         Console.ReadLine();
-                        break;
+                        return;
                     }
                 }
                 else if (command.Equals("you_next"))
@@ -157,8 +147,8 @@ namespace TorpedoKliens
                         game.DrawMap();
                         Console.WriteLine("Add meg a lövésed helyét: ");
                         LocationVector shotTarget = GetLocation(game, true);
-                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name}");
-                        ProcessShotResponse(shotResponse, game, communicator);
+                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name};{roomCode}");
+                        ProcessShotResponse(shotResponse, game, communicator, roomCode);
                     }
                     else if (subcommand.Equals("nothing"))
                     {
@@ -168,8 +158,8 @@ namespace TorpedoKliens
                         Console.ReadLine();
                         Console.WriteLine("Add meg a lövésed helyét: ");
                         LocationVector shotTarget = GetLocation(game, true);
-                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name}");
-                        ProcessShotResponse(shotResponse, game, communicator);
+                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name};{roomCode}");
+                        ProcessShotResponse(shotResponse, game, communicator, roomCode);
                     }
                     else if (subcommand.Equals("dmg"))
                     {
@@ -179,8 +169,8 @@ namespace TorpedoKliens
                         Console.ReadLine();
                         Console.WriteLine("Add meg a lövésed helyét: ");
                         LocationVector shotTarget = GetLocation(game, true);
-                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name}");
-                        ProcessShotResponse(shotResponse, game, communicator);
+                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name};{roomCode}");
+                        ProcessShotResponse(shotResponse, game, communicator, roomCode);
                     }
                     else if (subcommand.Equals("died_ship"))
                     {
@@ -190,15 +180,110 @@ namespace TorpedoKliens
                         Console.ReadLine();
                         Console.WriteLine("Add meg a lövésed helyét: ");
                         LocationVector shotTarget = GetLocation(game, true);
-                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name}");
-                        ProcessShotResponse(shotResponse, game, communicator);
+                        string shotResponse = communicator.Communicate($"shot;{shotTarget.X},{shotTarget.Y};{name};{roomCode}");
+                        ProcessShotResponse(shotResponse, game, communicator, roomCode);
+                    }
+                }
+            }
+        }
+
+        static void Main(string[] args)
+        {
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Clear();
+            Console.WriteLine("Helyi hálózaton belül a szerver hálózaton belüli ip címét kell megadni.");
+            Console.WriteLine("Távoli eléréshez, használd a publikus ip-d és forwardold a 5100-as portot a szervert futtató gépre a routeredből.");
+            Console.Write("Add meg a szerver ip-címét: ");
+            string serverIp = Console.ReadLine();
+            Console.Clear();
+
+            Console.Write("Add meg a neved: ");
+            string name = Console.ReadLine();
+            Console.Clear();
+
+            Game game = new Game(name);
+            Communicator communicator = new Communicator(serverIp);
+
+            string[] mainMenuOptions = new string[] { "Új játék", "Kilépés" };
+            // 0 - új játék, 1 - kilépés
+            LevMenuManager mainMenu = new LevMenuManager(mainMenuOptions, "LevTorpedó főmenü");
+
+            string[] gameMenuOptions = new string[] { "Csatlakozás szobához", "Új szoba létrehozása" };
+            // 0 - Csatlakozás szobához, 1 - Új szoba létrehozása
+            LevMenuManager gameMenu = new LevMenuManager(gameMenuOptions, "LevTorpedó új játék");
+
+            // Főmenü loop
+            while (true)
+            {
+                Console.ForegroundColor = ConsoleColor.Gray;
+                int? mainMenuChoice = mainMenu.SelectionDialogue(true);
+                if (mainMenuChoice.HasValue && mainMenuChoice.Value == 1)
+                {
+                    // Kilépés
+                    break;
+                }
+                else if (mainMenuChoice.HasValue && mainMenuChoice.Value == 0)
+                {
+                    // Új játék
+                    int? gameMenuChoice = gameMenu.SelectionDialogue(true);
+                    if (gameMenuChoice.HasValue && gameMenuChoice.Value == 0)
+                    {
+                        // Csatlakozás meglévő szobához
+                        Console.Clear();
+                        Console.Write("Add meg a szoba kódját: ");
+                        string roomCode = Console.ReadLine();
+                        // Szoba ellenőrzése
+                        string checkResp = communicator.Communicate($"check_room;{roomCode}");
+                        if (checkResp.Equals("ok"))
+                        {
+                            MainGameLoop(game, communicator, name, roomCode);
+                        }
+                        else if (checkResp.Equals("full"))
+                        {
+                            Console.Clear();
+                            Console.WriteLine("A szoba jelenleg tele van.\nNyomj enter-t a folytatáshoz...");
+                            Console.ReadLine();
+                        }
+                        else if (checkResp.Equals("non_existent"))
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Ilyen kódú szoba sajnos nem létezik!\nNyomj enter-t a folytatáshoz...");
+                            Console.ReadLine();
+                        }
+                        else
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Ismeretlen hiba :(\nNyomj enter-t a folytatáshoz...");
+                            Console.ReadLine();
+                        }
+                    }
+                    else if (gameMenuChoice.HasValue && gameMenuChoice.Value == 1)
+                    {
+                        // Új szoba létrehozása
+                        Console.Clear();
+                        Console.WriteLine("Add meg az új szoba kódját: ");
+                        string roomCode = Console.ReadLine();
+                        string newGameCmd = $"new_game;{roomCode}";
+                        string newGameResp = communicator.Communicate(newGameCmd);
+                        if (newGameResp.Equals("success"))
+                        {
+                            // Siker, játék elkezdése
+                            MainGameLoop(game, communicator, name, roomCode);
+                        }
+                        else if (newGameResp.Equals("fail"))
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Már létezik ilyen kódú szoba.\nKérlek válassz másik kódot");
+                            Console.WriteLine("Nyomj enter-t a folytatáshoz...");
+                            Console.ReadLine();
+                        }
                     }
                 }
             }
             Console.ForegroundColor = ConsoleColor.Gray;
         }
 
-        static void ProcessShotResponse(string response, Game game, Communicator communicator)
+        static void ProcessShotResponse(string response, Game game, Communicator communicator, string roomCode)
         {
             string[] content = response.Split(';');
             // shot responseok feldolgozása és a gameben beállítása
@@ -222,7 +307,7 @@ namespace TorpedoKliens
             else if (content[0].Equals("shrank"))
             {
                 int shrunkShipSize = int.Parse(content[2]);
-                string shipCordsResponse = communicator.Communicate($"ship_coords;{game.UserName};{shrunkShipSize}");
+                string shipCordsResponse = communicator.Communicate($"ship_coords;{game.UserName};{shrunkShipSize};{roomCode}");
                 string cordsToProcess = shipCordsResponse.Split("{")[1];
                 string[] x_y_cords = cordsToProcess.Split("|");
                 string[] xCords = x_y_cords[0].Split(".");
