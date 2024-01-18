@@ -11,10 +11,9 @@
             //Console.ReadLine();
 
             LevLogger logger = new LevLogger(LogLevel.LogDebug, @"C:\Users\bajno.DESKTOP-RHO2542\Desktop\torpedolog.txt");
-            Game game = new Game(logger);
 
             Communicator communicator = new Communicator();
-            communicator.StartServerLoop(logger, game);
+            communicator.StartServerLoop(logger);
         }
     }
 }

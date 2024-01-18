@@ -2,6 +2,7 @@
 {
     internal class Game
     {
+        string roomCode;
         public List<Player> players;
         string nextPlayer;
         bool gameOver;
@@ -11,9 +12,17 @@
         string lastEventStr;
         LocationVector lastShotLocation;
         int lastShipSize;
+
+        bool deletable;
+        List<string> winConditionPlayers;
+
+        public string RoomCode { get { return roomCode; } }
+        public bool Deletable { get { return deletable; } }
+        public int PlayersCount {  get { return players.Count; } }
         
-        public Game(LevLogger logger)
+        public Game(LevLogger logger, string roomCode)
         {
+            this.roomCode = roomCode;
             this.players = new List<Player>();
             nextPlayer = "none";
             gameOver = false;
@@ -23,11 +32,13 @@
             lastEventStr = null;
             lastShotLocation = null;
             lastShipSize = 0;
+
+            deletable = false;
+            winConditionPlayers = new List<string>();
         }
 
         public string ProcessMsg(string msg)
         {
-            msg = msg.Replace("<EOF>", string.Empty);
             //logger.AddLog(new LevLog(LogLevel.LogDebug, $"(ProcessMsg) Processing msg: {msg}"));
 
             string[] content = msg.Split(";");
@@ -87,7 +98,7 @@
             string[] coords = content[1].Split(",");
             LocationVector shotLocation = new LocationVector(int.Parse(coords[0]), int.Parse(coords[1]));
             lastShotLocation = shotLocation;
-            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Player {shootingPlayer} is shooting at x: {shotLocation.X}, y: {shotLocation.Y}"));
+            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | Player {shootingPlayer} is shooting at x: {shotLocation.X}, y: {shotLocation.Y}"));
             foreach (Player player in this.players)
             {
                 if (!player.Name.Equals(shootingPlayer))
@@ -98,30 +109,30 @@
                     if (niceShot)
                     {
                         lastEventStr = "dmg";
-                        logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) {shootingPlayer} eltalalta {player.Name}-t"));
+                        logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | {shootingPlayer} eltalalta {player.Name}-t"));
                         if (player.ShipsAlive == 0)
                         {
-                            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Vege a jateknak! {shootingPlayer} nyert!"));
+                            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | Vege a jateknak! {shootingPlayer} nyert!"));
                             gameOver = true;
                             winnerPlayer = shootingPlayer;
                         }
                         else if (player.ShipsAlive == targetPlayerShipsCount - 1)
                         {
-                            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) {player.Name} {player.ShipSizeByCoords(shotLocation)} hosszu hajoja elsullyedt."));
+                            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | {player.Name} {player.ShipSizeByCoords(shotLocation)} hosszu hajoja elsullyedt."));
                             lastEventStr = "died_ship";
                             lastShipSize = player.ShipSizeByCoords(shotLocation);
                             return $"shrank;{shotLocation.X},{shotLocation.Y};{player.ShipSizeByCoords(shotLocation)}";
                         }
-                        logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) {nextPlayer} kovetkezik."));
+                        logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | {nextPlayer} kovetkezik."));
                         return $"nice;{shotLocation.X},{shotLocation.Y}";
                     }
                     else
                     {
                         lastEventStr = "nothing";
                     }
-                    logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) {shootingPlayer} nem talalta el {player.Name}-t"));
+                    logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | {shootingPlayer} nem talalta el {player.Name}-t"));
                     nextPlayer = player.Name;
-                    logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) {nextPlayer} kovetkezik."));
+                    logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessShoot) Roomcode: {roomCode} | {nextPlayer} kovetkezik."));
                 }
             }
             return $"empty;{shotLocation.X},{shotLocation.Y}";
@@ -129,10 +140,18 @@
 
         private string ProcessInfo(string msg)
         {
-            //logger.AddLog(new LevLog(LogLevel.LogDebug, $"(ProcessInfo) processing info: {msg}"));
+            //logger.AddLog(new LevLog(LogLevel.LogDebug, $"(ProcessInfo) Roomcode: {roomCode} | processing info: {msg}"));
             string[] content = msg.Split(";");
             if (gameOver)
             {
+                if (!winConditionPlayers.Contains(content[1]))
+                {
+                    winConditionPlayers.Add(content[1]);
+                }
+                if (winConditionPlayers.Count == 2)
+                {
+                    deletable = true;
+                }
                 return $"game_over;{winnerPlayer}";
             }
             if (content[1].Equals(nextPlayer))
@@ -180,6 +199,7 @@
                 shipsList.Add(new Ship(locations.ToArray()));
             }
             players.Add(new Player(name, shipsList.ToArray()));
+            logger.AddLog(new LevLog(LogLevel.LogInfo, $"(ProcessNewPlayer) Roomcode: {roomCode} | Új játékos: {name}"));
             if (players.Count == 2)
             {
                 nextPlayer = name;
