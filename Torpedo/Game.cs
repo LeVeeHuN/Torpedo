@@ -9,6 +9,9 @@
         string winnerPlayer;
         LevLogger logger;
 
+        bool firstInfoDone;
+        DateTime lastRequest;
+
         string lastEventStr;
         LocationVector lastShotLocation;
         int lastShipSize;
@@ -17,7 +20,26 @@
         List<string> winConditionPlayers;
 
         public string RoomCode { get { return roomCode; } }
-        public bool Deletable { get { return deletable; } }
+        //public bool Deletable { get { return deletable; } }
+        public bool Deletable
+        {
+            get
+            {
+                if (deletable)
+                {
+                    return deletable;
+                }
+                if (firstInfoDone)
+                {
+                    TimeSpan ts = DateTime.Now.Subtract(lastRequest);
+                    if (ts.TotalSeconds > 20)
+                    {
+                        return true;
+                    }
+                }
+                return deletable;
+            }
+        }
         public int PlayersCount {  get { return players.Count; } }
         
         public Game(LevLogger logger, string roomCode)
@@ -35,6 +57,9 @@
 
             deletable = false;
             winConditionPlayers = new List<string>();
+
+            firstInfoDone = false;
+            lastRequest = DateTime.Now;
         }
 
         public string ProcessMsg(string msg)
@@ -42,6 +67,7 @@
             //logger.AddLog(new LevLog(LogLevel.LogDebug, $"(ProcessMsg) Processing msg: {msg}"));
 
             string[] content = msg.Split(";");
+            lastRequest = DateTime.Now;
             switch (content[0])
             {
                 case "new_player":
@@ -50,6 +76,7 @@
                 case "shot":
                     return ProcessShoot(msg);
                 case "info":
+                    firstInfoDone = true;
                     return ProcessInfo(msg);
                 case "ship_coords":
                     return ProcessShipCoords(msg);
