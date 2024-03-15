@@ -1,6 +1,6 @@
 ﻿namespace Torpedo
 {
-    internal class Ship
+    public class Ship
     {
         private bool isSink;
         private int size;

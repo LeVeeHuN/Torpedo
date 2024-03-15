@@ -1,6 +1,6 @@
 ﻿namespace Torpedo
 {
-    internal class Player
+    public class Player
     {
         private string name;
         private Ship[] ships;

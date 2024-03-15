@@ -4,12 +4,13 @@ using System.Text;
 
 namespace Torpedo
 {
-    internal class Communicator
+    public class Communicator
     {
         //IPHostEntry host;
         IPAddress ipAddr;
         IPEndPoint localEndPoint;
         List<Game> games;
+        public LevLogger logger;
 
         public Communicator()
         {
@@ -20,7 +21,20 @@ namespace Torpedo
             games = new List<Game>();
         }
 
+        public Communicator(int port)
+        {
+            ipAddr = IPAddress.Parse("0.0.0.0");
+            localEndPoint = new IPEndPoint(ipAddr, port);
+            games = new List<Game>();
+        }
+
         public void StartServerLoop(LevLogger logger)
+        {
+            this.logger = logger;
+            StartServerLoop();
+        }
+
+        public void StartServerLoop()
         {
             try
             {
@@ -114,10 +128,12 @@ namespace Torpedo
                         // Ha később valami argumentumot rakok még a parancsok végére EL FOG TÖRNI
                         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                         string roomCode = data.Split(';')[data.Split(";").Length - 1];
+                        bool roomExists = false;
                         foreach (Game g in games)
                         {
                             if (g.RoomCode.Equals(roomCode))
                             {
+                                roomExists = true;
                                 string response = g.ProcessMsg(data)+"<EOF>";
                                 byte[] responseBytes = Encoding.UTF8.GetBytes(response);
                                 handler.Send(responseBytes);
@@ -125,6 +141,12 @@ namespace Torpedo
                                 handler.Close();
                                 break;
                             }
+                        }
+                        if (!roomExists)
+                        {
+                            handler.Send(Encoding.UTF8.GetBytes("error<EOF>"));
+                            handler.Shutdown(SocketShutdown.Both);
+                            handler.Close();
                         }
                     }
                     CheckGamesForDeletablesAndDeleteThem(logger);
@@ -134,6 +156,32 @@ namespace Torpedo
             {
                 logger.AddLog(new LevLog(LogLevel.LogError, $"(Communicator) {ex.ToString()}"));
             }
+        }
+
+        public string[] GetPlayerNames(string roomcode)
+        {
+            string[] players = new string[2];
+            foreach (Game g in games)
+            {
+                if (g.RoomCode.Equals(roomcode))
+                {
+                    for (int i = 0; i < g.players.Count; i++)
+                    {
+                        players[i] = g.players[i].Name;
+                    }
+                }
+            }
+            return players;
+        }
+
+        public string[] GameRooms()
+        {
+            List<string> rooms = new List<string>();
+            foreach (Game g in games)
+            {
+                rooms.Add(g.RoomCode);
+            }
+            return rooms.ToArray();
         }
 
         private void CheckGamesForDeletablesAndDeleteThem(LevLogger logger)
@@ -152,6 +200,28 @@ namespace Torpedo
             if (difference > 0)
             {
                 logger.AddLog(new LevLog(LogLevel.LogInfo, $"(CheckGamesForDeletablesAndDeleteThem) Deleted: {difference} games"));
+            }
+            games = newGames;
+        }
+
+        public void DeleteRoom(string roomcode)
+        {
+            List<Game> newGames = new List<Game>();
+            foreach (Game game in games)
+            {
+                if (!game.RoomCode.Equals(roomcode))
+                {
+                    newGames.Add(game);
+                }
+            }
+            int diff = games.Count - newGames.Count;
+            if (diff > 0)
+            {
+                logger.AddLog(new LevLog(LogLevel.LogInfo, $"(DeleteRoom) Manually deleted: {roomcode}"));
+            }
+            else
+            {
+                logger.AddLog(new LevLog(LogLevel.LogError, $"(DeleteRoom) Manual room deletion failed: {roomcode}"));
             }
             games = newGames;
         }

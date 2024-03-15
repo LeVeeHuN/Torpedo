@@ -1,11 +1,12 @@
 ﻿namespace Torpedo
 {
-    enum LogLevel { LogOff, LogError, LogInfo, LogDebug };
+    public enum LogLevel { LogOff, LogError, LogInfo, LogDebug };
 
-    internal class LevLog
+    public class LevLog
     {
         private LogLevel logLevel;
         private string logDescription;
+        private DateTime time;
 
         public LogLevel LogLevel { get { return logLevel; } }
         public string LogDescription { get { return logDescription; } }
@@ -14,15 +15,16 @@
         {
             this.logLevel = logLevel;
             this.logDescription = logDescription;
+            this.time = DateTime.Now;
         }
 
         public override string ToString()
         {
-            return $"{DateTime.Now.Hour}:{DateTime.Now.Minute}:{DateTime.Now.Second} [{logLevel.ToString().Remove(0, 3)}] : {logDescription}";
+            return $"{time.Hour}:{time.Minute}:{time.Second} [{logLevel.ToString().Remove(0, 3)}] : {logDescription}";
         }
     }
 
-    internal class LevLogger
+    public class LevLogger
     {
         // 0 - log off
         // 1 - Errors
@@ -31,6 +33,8 @@
         private LogLevel _loggingLevel;
         private string logLocation;
         private List<LevLog> _logs;
+
+        public List<LevLog> Logs { get { return _logs; } }
 
         public LevLogger(LogLevel loggingLevel, string logLocation)
         {

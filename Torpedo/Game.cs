@@ -1,6 +1,6 @@
 ﻿namespace Torpedo
 {
-    internal class Game
+    public class Game
     {
         string roomCode;
         public List<Player> players;
