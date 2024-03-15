@@ -10,10 +10,12 @@ namespace TorpedoKliens
 
         static bool CheckInput(string input)
         {
+            string[] possibilities = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
             if (input.Length == 2)
             {
                 string first_num = input[0].ToString();
                 string second_char = input[1].ToString();
+                if (!possibilities.Contains(second_char)) return false;
                 try
                 {
                     int.Parse(first_num);
@@ -184,26 +186,42 @@ namespace TorpedoKliens
                         ProcessShotResponse(shotResponse, game, communicator, roomCode);
                     }
                 }
+                else if (command.Equals("error"))
+                {
+                    Console.Clear();
+                    Console.WriteLine("Hiba! A szobat talan toroltek :(\nNyomj entert a folytatashoz...");
+                    Console.ReadLine();
+                    return;
+                }
             }
         }
 
         static void Main(string[] args)
         {
+            // LeVee által futtatott publikus szerver
+            const string DEFAULT_IP = "217.13.111.73";
+
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.Clear();
             Console.WriteLine("Helyi hálózaton belül a szerver hálózaton belüli ip címét kell megadni.");
             Console.WriteLine("Távoli eléréshez, használd a publikus ip-d és forwardold a 5100-as portot a szervert futtató gépre a routeredből.");
+            Console.WriteLine("Default ip-hez, hagyd üresen!");
             Console.Write("Add meg a szerver ip-címét: ");
             string serverIp = Console.ReadLine();
             Console.Clear();
+
+            if (string.IsNullOrWhiteSpace(serverIp))
+            {
+                serverIp = DEFAULT_IP;
+            }
 
             Console.Write("Add meg a neved: ");
             string name = Console.ReadLine();
             Console.Clear();
 
-            Game game = new Game(name);
             Communicator communicator = new Communicator(serverIp);
 
+            #region Menuelemek létrehozása
             string[] mainMenuOptions = new string[] { "Új játék", "Kilépés" };
             // 0 - új játék, 1 - kilépés
             LevMenuManager mainMenu = new LevMenuManager(mainMenuOptions, "LevTorpedó főmenü");
@@ -211,10 +229,13 @@ namespace TorpedoKliens
             string[] gameMenuOptions = new string[] { "Csatlakozás szobához", "Új szoba létrehozása" };
             // 0 - Csatlakozás szobához, 1 - Új szoba létrehozása
             LevMenuManager gameMenu = new LevMenuManager(gameMenuOptions, "LevTorpedó új játék");
+            #endregion
 
             // Főmenü loop
             while (true)
             {
+                Game game = new Game(name);
+
                 Console.ForegroundColor = ConsoleColor.Gray;
                 int? mainMenuChoice = mainMenu.SelectionDialogue(true);
                 if (mainMenuChoice.HasValue && mainMenuChoice.Value == 1)

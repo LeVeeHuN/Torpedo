@@ -4,7 +4,7 @@ using System.Text;
 
 namespace TorpedoKliens
 {
-    internal class Communicator
+    public class Communicator
     {
         //IPHostEntry host;
         IPAddress ipAddr;
